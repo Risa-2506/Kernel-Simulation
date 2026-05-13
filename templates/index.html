@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini OS Kernel Simulator Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Top Navbar -->
+    <nav class="navbar navbar-dark bg-dark border-bottom border-secondary sticky-top py-2 shadow-sm">
+        <div class="container-fluid px-4">
+            <span class="navbar-brand fw-bold d-flex align-items-center">
+                <i class="fas fa-microchip text-primary me-2"></i>
+                <span>OS Kernel <span class="text-secondary fw-normal">Simulator v2.0</span></span>
+            </span>
+            <div class="d-flex align-items-center">
+                <div class="me-4 d-none d-md-block text-secondary small">
+                    <span id="scheduler-mode-display" class="badge bg-dark border border-secondary text-secondary">Mode: Round Robin</span>
+                    <span class="ms-2 badge bg-dark border border-secondary text-secondary">Quantum: <span id="quantum-display">2</span></span>
+                </div>
+                <div class="btn-group shadow-sm">
+                    <button id="btn-step" class="btn btn-outline-success btn-sm px-3"><i class="fas fa-play me-1"></i> Step</button>
+                    <button id="btn-run" class="btn btn-primary btn-sm px-3"><i class="fas fa-forward me-1"></i> Auto-Run</button>
+                    <button id="btn-reset" class="btn btn-outline-danger btn-sm px-3"><i class="fas fa-undo me-1"></i> Reset</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid p-4">
+        <div class="row g-4">
+            <!-- Left Sidebar: Settings & Flow -->
+            <div class="col-xl-3 col-lg-4">
+                <!-- System Flow -->
+                <div class="card border-0 mb-4">
+                    <div class="card-header"><i class="fas fa-project-diagram me-2"></i>System Interaction Flow</div>
+                    <div class="card-body py-4">
+                        <div class="d-flex flex-column align-items-center gap-3">
+                            <div id="node-pm" class="flow-node rounded-pill px-4 py-2 small">Process Manager</div>
+                            <i class="fas fa-chevron-down text-secondary"></i>
+                            <div id="node-mm" class="flow-node rounded-pill px-4 py-2 small">Memory Manager</div>
+                            <i class="fas fa-chevron-down text-secondary"></i>
+                            <div id="node-queue" class="flow-node rounded-pill px-4 py-2 small">Ready Queue</div>
+                            <i class="fas fa-chevron-down text-secondary"></i>
+                            <div id="node-cpu" class="flow-node rounded-pill px-4 py-2 small">CPU Execution</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Card -->
+                <div class="card border-0 mb-4">
+                    <div class="card-header d-flex justify-content-between">
+                        <span><i class="fas fa-sliders-h me-2"></i>Simulator Settings</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small fw-bold">Scheduling Mode</label>
+                            <select id="select-algo" class="form-select form-select-sm bg-dark text-white border-secondary">
+                                <option value="RR">Round Robin</option>
+                                <option value="Priority">Priority (Preemptive)</option>
+                            </select>
+                            <div class="extra-small text-info mt-1" id="algo-description">
+                                <i class="fas fa-info-circle me-1"></i>
+                                RR: Each process gets a fixed time slice (Quantum).
+                            </div>
+                            <div class="extra-small text-warning mt-1 d-none" id="priority-note">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                Rule: Lower Number = Higher Priority
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small fw-bold">Time Quantum</label>
+                            <input type="number" id="input-quantum" class="form-control form-control-sm bg-dark text-white border-secondary" value="2">
+                        </div>
+                        <button id="btn-apply-settings" class="btn btn-primary btn-sm w-100 shadow-sm">Apply & Sync</button>
+                    </div>
+                </div>
+
+                <!-- Demo Scenarios -->
+                <div class="card border-0">
+                    <div class="card-header"><i class="fas fa-flask me-2"></i>Demo Scenarios</div>
+                    <div class="card-body p-2">
+                        <div class="list-group list-group-flush small">
+                            <button class="list-group-item list-group-item-action bg-transparent text-secondary border-secondary py-2" onclick="loadDemo('RR')">Round Robin Test Case</button>
+                            <button class="list-group-item list-group-item-action bg-transparent text-secondary border-secondary py-2" onclick="loadDemo('PRIO')">Priority Scheduling Test</button>
+                            <button class="list-group-item list-group-item-action bg-transparent text-secondary border-secondary py-2" onclick="loadDemo('IO')">I/O Wait Simulation</button>
+                            <button class="list-group-item list-group-item-action bg-transparent text-secondary border-secondary py-2" onclick="loadDemo('FRAG')">Memory Fragmentation Test</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="col-xl-6 col-lg-8">
+                <!-- CPU Monitor -->
+                <div class="card border-0 mb-4 shadow-blue">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-microchip me-2"></i>CPU Execution Monitor</span>
+                        <span id="cpu-status-badge" class="badge bg-success shadow-sm">SYSTEM IDLE</span>
+                    </div>
+                    <div class="card-body py-4">
+                        <div class="row align-items-center">
+                            <div class="col-md-5 text-center border-end border-secondary">
+                                <h1 id="cpu-proc-name" class="mb-0 text-glow">IDLE</h1>
+                                <p id="cpu-proc-id" class="text-secondary small mb-0 mt-1">NO ACTIVE PROCESS</p>
+                                <div id="cpu-proc-prio-wrapper" class="mt-2 d-none">
+                                    <span class="badge bg-dark border border-secondary text-info">Priority: <span id="cpu-proc-prio">-</span></span>
+                                </div>
+                            </div>
+                            <div class="col-md-7 px-4">
+                                <div class="cpu-stat-row">
+                                    <span class="text-secondary small">Scheduler Type</span>
+                                    <span id="cpu-algo-type" class="badge bg-dark border border-secondary">Round Robin</span>
+                                </div>
+                                <div class="cpu-stat-row">
+                                    <span class="text-secondary small">Current Time Slice</span>
+                                    <span id="cpu-slice" class="fw-bold text-success">0 Units</span>
+                                </div>
+                                <div class="cpu-stat-row">
+                                    <span class="text-secondary small">Remaining Burst</span>
+                                    <span id="cpu-proc-burst" class="fw-bold text-primary">0</span>
+                                </div>
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between small mb-1">
+                                        <span class="text-secondary">Execution Progress</span>
+                                        <span id="cpu-percent" class="fw-bold">0%</span>
+                                    </div>
+                                    <div class="progress bg-dark" style="height: 10px;">
+                                        <div id="cpu-progress-bar" class="progress-bar bg-primary progress-bar-striped progress-bar-animated rounded" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Memory Map -->
+                <div class="card border-0 mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-memory me-2"></i>Memory Allocation Map</span>
+                        <div class="small text-secondary">
+                            Frag: <span id="stat-frag" class="text-white fw-bold">0%</span> | 
+                            Holes: <span id="stat-holes" class="text-white fw-bold">1</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="memory-map-container" class="d-flex flex-wrap gap-1 p-2 bg-black rounded shadow-inner" style="min-height: 80px;"></div>
+                        <div class="mt-3 row g-2">
+                            <div class="col-md-4">
+                                <div class="p-2 bg-dark rounded border border-secondary text-center">
+                                    <div class="extra-small text-secondary text-uppercase fw-bold">Used Memory</div>
+                                    <span id="stat-used" class="text-white fw-bold">0</span> <span class="text-secondary small">/ 1024 KB</span>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="p-2 bg-dark rounded border border-secondary text-center">
+                                    <div class="extra-small text-secondary text-uppercase fw-bold">Largest Free Block</div>
+                                    <span id="stat-large" class="text-white fw-bold">1024</span> <span class="text-secondary small">KB Available</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Process Table -->
+                <div class="card border-0 mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span data-bs-toggle="tooltip" title="READY: Process is waiting for CPU allocation"><i class="fas fa-list me-2"></i>Process Control Block (PCB) Table</span>
+                        <button class="btn btn-primary btn-sm px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-proc"><i class="fas fa-plus me-1"></i> New Process</button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover mb-0 align-middle">
+                                <thead class="bg-dark text-secondary extra-small text-uppercase">
+                                    <tr>
+                                        <th class="ps-3">PID</th>
+                                        <th>Name</th>
+                                        <th>Priority</th>
+                                        <th>Burst Left</th>
+                                        <th class="pe-3">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-pcb" class="small"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar: Queues & Logs -->
+            <div class="col-xl-3 col-lg-12">
+                <!-- Ready Queue -->
+                <div class="card border-0 mb-4">
+                    <div class="card-header"><i class="fas fa-stream me-2"></i>Ready Queue</div>
+                    <div class="card-body p-3">
+                        <div id="container-ready" class="d-flex flex-wrap gap-2"></div>
+                    </div>
+                </div>
+
+                <!-- Waiting Queue -->
+                <div class="card border-0 mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-pause-circle me-2"></i>Waiting (I/O) Queue</span>
+                        <span class="badge bg-dark text-secondary border border-secondary">Blocked State</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="container-waiting" class="list-group list-group-flush bg-transparent">
+                            <!-- Populated via JS -->
+                        </div>
+                        <div id="waiting-empty-msg" class="p-4 text-center text-secondary small">
+                            No processes waiting for I/O
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Event Logs -->
+                <div class="card border-0">
+                    <div class="card-header"><i class="fas fa-terminal me-2"></i>System Activity Logs</div>
+                    <div class="card-body p-0">
+                        <div id="log-list" class="p-3 font-monospace extra-small" style="height: 380px; overflow-y: auto; background: #0d1117;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer: Gantt Chart -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card border-0">
+                    <div class="card-header"><i class="fas fa-chart-bar me-2"></i>Execution Gantt Chart</div>
+                    <div class="card-body p-3 overflow-auto">
+                        <div id="gantt-chart-container" class="d-flex align-items-center"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- File System & Inode (Separate Section) -->
+        <div class="row mt-4 g-4">
+            <div class="col-md-8">
+                <div class="card border-0">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-folder-open me-2"></i>Virtual File System Explorer</span>
+                        <button class="btn btn-outline-primary btn-sm shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-file"><i class="fas fa-file-medical"></i></button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="container-files" class="list-group list-group-flush bg-transparent"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="card border-0">
+                    <div class="card-header"><i class="fas fa-database me-2"></i>Inode Index Table</div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-dark table-sm mb-0 extra-small">
+                                <thead class="bg-dark text-secondary">
+                                    <tr><th class="ps-2">Inode</th><th>Filename</th><th>Blocks</th><th class="pe-2">Size</th></tr>
+                                </thead>
+                                <tbody id="table-inodes"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- [Process Modal] -->
+    <div class="modal fade" id="modal-proc" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark border-secondary">
+                <div class="modal-header border-secondary">
+                    <h6 class="modal-title fw-bold">CREATE NEW PROCESS</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-4">
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small fw-bold">Process Identifier</label>
+                        <input type="text" id="p-name" class="form-control bg-black text-white border-secondary" value="P_Task">
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-4">
+                            <label class="form-label text-secondary small fw-bold">Burst</label>
+                            <input type="number" id="p-burst" class="form-control bg-black text-white border-secondary" value="5">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label text-secondary small fw-bold">RAM (KB)</label>
+                            <input type="number" id="p-mem" class="form-control bg-black text-white border-secondary" value="100">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label text-secondary small fw-bold">Prio</label>
+                            <input type="number" id="p-prio" class="form-control bg-black text-white border-secondary" value="1">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button class="btn btn-primary w-100 shadow-sm" id="btn-create-p">INITIALIZE PROCESS</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- [File View/Edit Modal] -->
+    <div class="modal fade" id="modal-file-view" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content bg-dark border-secondary">
+                <div class="modal-header border-secondary d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 id="view-file-title" class="modal-title fw-bold">FILE CONTENT VIEWER</h6>
+                        <div id="file-metadata" class="extra-small text-info mt-1"></div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <!-- View Mode -->
+                    <div id="file-view-mode" class="p-4 bg-black font-monospace text-white" style="height: 300px; overflow-y: auto; white-space: pre-wrap;"></div>
+                    <!-- Edit Mode -->
+                    <textarea id="view-file-content" class="form-control bg-black text-white border-0 font-monospace p-4 d-none" rows="12"></textarea>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button id="btn-edit-mode" class="btn btn-primary btn-sm px-4">EDIT FILE</button>
+                    <button id="btn-save-file" class="btn btn-success btn-sm px-4 d-none">SAVE CHANGES</button>
+                    <button id="btn-delete-file-modal" class="btn btn-danger btn-sm px-3">DELETE</button>
+                    <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">CLOSE</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- [New File Modal] -->
+    <div class="modal fade" id="modal-file" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark border-secondary">
+                <div class="modal-header border-secondary">
+                    <h6 class="modal-title fw-bold">NEW VIRTUAL FILE</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-4">
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small fw-bold">Filename</label>
+                        <input type="text" id="f-name" class="form-control bg-black text-white border-secondary" placeholder="document.txt">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small fw-bold">Initial Content</label>
+                        <textarea id="f-content" class="form-control bg-black text-white border-secondary" rows="4"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button class="btn btn-primary w-100 shadow-sm" id="btn-create-f">STORE FILE</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

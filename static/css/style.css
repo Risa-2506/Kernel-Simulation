@@ -1,0 +1,232 @@
+/* --- Variables & Core Reset --- */
+:root {
+    --bg-main: #0a0b0d;
+    --bg-card: #15171b;
+    --bg-header: #1c1f24;
+    --border-color: #2d3239;
+    --text-primary: #e6edf3;
+    --text-secondary: #8b949e;
+    --primary: #2f81f7;
+    --success: #238636;
+    --warning: #d29922;
+    --danger: #da3633;
+    --purple: #8957e5;
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    letter-spacing: -0.2px;
+}
+
+/* --- Layout & Components --- */
+.card {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.shadow-blue {
+    box-shadow: 0 0 20px rgba(47, 129, 247, 0.15), 0 4px 12px rgba(0,0,0,0.5);
+    border-color: rgba(47, 129, 247, 0.3) !important;
+}
+
+.text-glow {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.card-header {
+    background-color: var(--bg-header) !important;
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+/* --- CPU Panel Fixes --- */
+#cpu-proc-name {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(47, 129, 247, 0.3);
+}
+
+.cpu-stat-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* --- Memory Map Improvements --- */
+.mem-block {
+    height: 45px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: white;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.mem-block:hover {
+    filter: brightness(1.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.mem-free { background: linear-gradient(180deg, #2ea043 0%, #238636 100%); opacity: 0.4; }
+.mem-alloc { background: linear-gradient(180deg, #388bfd 0%, #1f6feb 100%); }
+
+/* --- Gantt Chart Redesign --- */
+#gantt-chart-container {
+    background: #0d1117;
+    border-radius: 8px;
+    padding: 2.5rem 1rem 1.5rem 1rem;
+    border: 1px solid var(--border-color);
+    position: relative;
+    min-height: 120px;
+    display: flex;
+    align-items: flex-start;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.gantt-block {
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #fff;
+    flex-shrink: 0;
+    position: relative;
+    border-radius: 0; /* Remove radius for contiguous look */
+    border-right: 1px solid rgba(0,0,0,0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+    cursor: pointer;
+}
+
+.gantt-block:hover {
+    filter: brightness(1.2);
+    z-index: 5;
+}
+
+.gantt-label {
+    z-index: 2;
+}
+
+.gantt-time-marker {
+    position: absolute;
+    top: 55px;
+    left: 0;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: var(--text-secondary);
+    font-family: monospace;
+    transform: translateX(-50%); /* Center exactly on the boundary */
+    white-space: nowrap;
+}
+
+.gantt-time-marker.end-marker {
+    left: auto;
+    right: 0;
+    transform: translateX(50%); /* This will be changed to -50% in JS logic for consistency */
+}
+
+/* --- System Flow --- */
+.flow-node {
+    border: 2px solid var(--border-color);
+    background: var(--bg-header);
+    transition: all 0.4s ease;
+}
+
+.flow-node.active {
+    border-color: var(--primary);
+    color: #fff;
+    background: rgba(47, 129, 247, 0.15);
+    box-shadow: 0 0 20px rgba(47, 129, 247, 0.25);
+}
+
+/* --- Log Styling --- */
+.log-entry { margin-bottom: 0.4rem; line-height: 1.4; border-left: 2px solid transparent; padding-left: 8px; }
+.log-timestamp { color: var(--text-secondary); margin-right: 8px; font-weight: 500; }
+
+.log-scheduling { border-color: var(--primary); color: #79c0ff; }
+.log-success { border-color: var(--success); color: #7ee787; }
+.log-waiting { border-color: var(--warning); color: #d29922; }
+.log-termination { border-color: var(--danger); color: #ff7b72; }
+.log-default { border-color: var(--text-secondary); color: var(--text-secondary); }
+
+/* --- Badges --- */
+.badge { font-weight: 600; padding: 0.35em 0.65em; border-radius: 6px; }
+.state-new { background-color: var(--purple); }
+.state-ready { background-color: var(--success); }
+.state-running { background-color: var(--primary); }
+.state-waiting { background-color: var(--warning); color: #000; }
+.state-terminated { background-color: #484f58; }
+
+/* --- Scrollbars --- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg-main); }
+::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; border: 2px solid var(--bg-main); }
+::-webkit-scrollbar-thumb:hover { background: #484f58; }
+
+/* --- Responsive Helpers --- */
+.table-responsive { scrollbar-width: thin; }
+.extra-small { font-size: 0.7rem; }
+
+/* --- Demo Buttons --- */
+.btn-demo {
+    border: 1px solid var(--border-color);
+    background: var(--bg-header);
+    color: var(--text-secondary);
+    transition: all 0.2s;
+}
+.btn-demo:hover {
+    background: var(--border-color);
+    color: #fff;
+}
+
+/* --- Waiting Queue Item --- */
+.waiting-item {
+    background: rgba(255, 193, 7, 0.05) !important;
+    border-left: 3px solid var(--warning) !important;
+    padding: 12px 16px !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.wait-progress {
+    height: 4px !important;
+    margin-top: 8px;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.wait-spinner {
+    animation: fa-spin 2s infinite linear;
+}
+
+/* --- File Viewer/Editor --- */
+#file-view-mode { scrollbar-width: thin; }
+#file-metadata { font-family: var(--font-mono); opacity: 0.8; }
+.font-monospace { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace !important; }
+.inode-block-visual { color: var(--primary); font-weight: bold; letter-spacing: 1px; }
